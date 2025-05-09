@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS reviews (
+    id VARCHAR PRIMARY KEY,
+    author VARCHAR NOT NULL,
+    store VARCHAR NOT NULL,
+    text VARCHAR NOT NULL,
+    rating VARCHAR NOT NULL
+);

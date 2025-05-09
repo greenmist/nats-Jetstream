@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  nats-1:
+    image: nats:2.10-alpine
+    container_name: nats-1
+    command:
+      - -js
+      - -server_name
+      - nats-1
+      - -cluster_name
+      - nats-cluster
+      - -cluster
+      - nats://0.0.0.0:6222
+      - -routes
+      - nats://nats-2:6222,nats://nats-3:6222
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    restart: unless-stopped
+
+  nats-2:
+    image: nats:2.10-alpine
+    container_name: nats-2
+    command:
+      - -js
+      - -server_name
+      - nats-2
+      - -cluster_name
+      - nats-cluster
+      - -cluster
+      - nats://0.0.0.0:6222
+      - -routes
+      - nats://nats-1:6222,nats://nats-3:6222
+    restart: unless-stopped
+
+  nats-3:
+    image: nats:2.10-alpine
+    container_name: nats-3
+    command:
+      - -js
+      - -server_name
+      - nats-3
+      - -cluster_name
+      - nats-cluster
+      - -cluster
+      - nats://0.0.0.0:6222
+      - -routes
+      - nats://nats-1:6222,nats://nats-2:6222
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:14
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: messages
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+
+  jetstream-app:
+    build: .
+    container_name: jetstream-app
+    depends_on:
+      - nats-1
+      - nats-2
+      - nats-3
+      - postgres
+    environment:
+      - NATS_URL=nats://nats-1:4222,nats://nats-2:4222,nats://nats-3:4222
+      - DB_HOST=postgres-db
+      - DB_PORT=5432
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - DB_NAME=messages
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
