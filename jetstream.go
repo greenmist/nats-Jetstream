@@ -41,7 +41,10 @@ func CreateStream(jetStream nats.JetStreamContext) error {
 		_, err = jetStream.AddStream(&nats.StreamConfig{
 			Name:     config.StreamName,
 			Subjects: []string{config.StreamSubjects},
+			Storage:  nats.FileStorage,
+			Replicas: 3,
 		})
+
 		if err != nil {
 			return err
 		}

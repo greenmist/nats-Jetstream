@@ -4,6 +4,8 @@ services:
     container_name: nats-1
     command:
       - -js
+      - -sd
+      - /data
       - -server_name
       - nats-1
       - -cluster_name
@@ -12,9 +14,12 @@ services:
       - nats://0.0.0.0:6222
       - -routes
       - nats://nats-2:6222,nats://nats-3:6222
+      - -m=8222
     ports:
       - "4222:4222"
       - "8222:8222"
+    volumes:
+      - nats1data:/data
     restart: unless-stopped
 
   nats-2:
@@ -22,6 +27,8 @@ services:
     container_name: nats-2
     command:
       - -js
+      - -sd
+      - /data
       - -server_name
       - nats-2
       - -cluster_name
@@ -30,6 +37,8 @@ services:
       - nats://0.0.0.0:6222
       - -routes
       - nats://nats-1:6222,nats://nats-3:6222
+    volumes:
+      - nats2data:/data
     restart: unless-stopped
 
   nats-3:
@@ -37,6 +46,8 @@ services:
     container_name: nats-3
     command:
       - -js
+      - -sd
+      - /data
       - -server_name
       - nats-3
       - -cluster_name
@@ -45,6 +56,8 @@ services:
       - nats://0.0.0.0:6222
       - -routes
       - nats://nats-1:6222,nats://nats-2:6222
+    volumes:
+      - nats3data:/data
     restart: unless-stopped
 
   postgres:
@@ -76,9 +89,10 @@ services:
       - DB_USER=user
       - DB_PASSWORD=password
       - DB_NAME=messages
-    ports:
-      - "8080:8080"
     restart: unless-stopped
 
 volumes:
+  nats1data:
+  nats2data:
+  nats3data:
   pgdata:
