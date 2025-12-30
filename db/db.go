@@ -34,7 +34,7 @@ func InitDB() {
 	fmt.Println("Connected to the database")
 }
 
-func InsertReview(id, author, store, text string, rating int) error {
-	_, err := DB.Exec("INSERT INTO reviews (id, author, store, text, rating) VALUES ($1, $2, $3, $4, $5)", id, author, store, text, rating)
+func InsertReview(id, author, store, text string, rating int, latencyMs float64) error {
+	_, err := DB.Exec("INSERT INTO reviews (id, author, store, text, rating, latency_ms) VALUES ($1, $2, $3, $4, $5, $6)", id, author, store, text, rating, latencyMs)
 	return err
 }

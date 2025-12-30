@@ -4,9 +4,10 @@ import (
 	"Jetstream/config"
 	"Jetstream/models"
 	"encoding/json"
-	"io/ioutil"
+	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -24,6 +25,7 @@ func publishReviews(js nats.JetStreamContext) {
 		// create random message intervals to slow down
 		r := rand.Intn(1500)
 		time.Sleep(time.Duration(r) * time.Millisecond)
+		oneReview.SentTime = time.Now().UnixMilli() // record send time
 
 		reviewString, err := json.Marshal(oneReview)
 		if err != nil {
@@ -32,19 +34,29 @@ func publishReviews(js nats.JetStreamContext) {
 		}
 
 		// publish to REVIEWS.rateGiven subject
+		// start := time.Now()
 		_, err = js.Publish(config.SubjectNameReviewCreated, reviewString)
 		if err != nil {
 			log.Println(err)
 		} else {
+			// oneReview.SentTime = start
 			log.Printf("Publisher  =>  Message: %s\n", oneReview.Text)
 		}
 	}
 }
 
 func getReviews() ([]models.Review, error) {
-	rawReviews, _ := ioutil.ReadFile("./reviews.json")
-	var reviewsObj []models.Review
-	err := json.Unmarshal(rawReviews, &reviewsObj)
+	rawReviews, err := os.ReadFile("./reviews.json")
+	if err != nil {
+		return nil, err
+	}
 
-	return reviewsObj, err
+	if len(rawReviews) == 0 {
+		return nil, fmt.Errorf("reviews.json is empty")
+	}
+
+	var reviewsObj []models.Review
+	er := json.Unmarshal(rawReviews, &reviewsObj)
+
+	return reviewsObj, er
 }

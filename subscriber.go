@@ -6,36 +6,59 @@ import (
 	"Jetstream/models"
 	"encoding/json"
 	"log"
+	"time"
 
 	"github.com/nats-io/nats.go"
 )
 
 func subscribeReviews(js nats.JetStreamContext) {
-	_, err := js.Subscribe(config.SubjectNameReviewCreated, func(m *nats.Msg) {
-		err := m.Ack()
+	_, err := js.Subscribe(
+		config.SubjectNameReviewCreated,
+		func(m *nats.Msg) {
 
-		if err != nil {
-			log.Println("Unable to Ack", err)
-			return
-		}
+			var review models.Review
+			err := json.Unmarshal(m.Data, &review)
+			if err != nil {
+				log.Println("JSON unmarshal failed:", err)
+				return
+			}
 
-		var review models.Review
-		err = json.Unmarshal(m.Data, &review)
-		if err != nil {
-			log.Fatal(err)
-		}
+			// Calculate latency
+			receivedTime := time.Now().UnixMilli()
+			latency := float64(receivedTime - review.SentTime)
+			log.Printf(
+				"Subscriber => Subject: %s | ID: %s | Author: %s | Rating: %d | Latency: %v\n",
+				m.Subject,
+				review.Id,
+				review.Author,
+				review.Rating,
+				latency,
+			)
 
-		log.Printf("Subscriber  =>  Subject: %s  -  ID: %s  -  Author: %s  -  Rating: %d\n", m.Subject, review.Id, review.Author, review.Rating)
+			err = db.InsertReview(
+				review.Id,
+				review.Author,
+				review.Store,
+				review.Text,
+				review.Rating,
+				latency,
+			)
+			if err != nil {
+				log.Println("DB insert failed:", err)
+				return
+			}
 
-		err = db.InsertReview(review.Id, review.Author, review.Store, review.Text, review.Rating)
-		if err != nil {
-			log.Println("Failed to insert into DB:", err)
-		}
-
-	})
+			// Ack ONLY after successful DB write
+			if err := m.Ack(); err != nil {
+				log.Println("Ack failed:", err)
+			}
+		},
+		nats.Durable("review-consumer"),
+		nats.ManualAck(),
+	)
 
 	if err != nil {
-		log.Println("Subscribe failed")
+		log.Println("Subscribe failed:", err)
 		return
 	}
 }

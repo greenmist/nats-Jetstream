@@ -3,5 +3,6 @@ CREATE TABLE IF NOT EXISTS reviews (
     author VARCHAR NOT NULL,
     store VARCHAR NOT NULL,
     text VARCHAR NOT NULL,
-    rating VARCHAR NOT NULL
+    rating INT NOT NULL,
+    latency_ms DOUBLE PRECISION
 );
