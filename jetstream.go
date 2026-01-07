@@ -34,7 +34,6 @@ func JetStreamInit() (nats.JetStreamContext, error) {
 func CreateStream(jetStream nats.JetStreamContext) error {
 	stream, err := jetStream.StreamInfo(config.StreamName)
 
-	// stream not found, create it
 	if stream == nil {
 		log.Printf("Creating stream: %s\n", config.StreamName)
 

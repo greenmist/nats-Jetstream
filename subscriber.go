@@ -5,6 +5,7 @@ import (
 	"Jetstream/db"
 	"Jetstream/models"
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -12,6 +13,9 @@ import (
 )
 
 func subscribeReviews(js nats.JetStreamContext) {
+	start := time.Now()
+	count := 0
+
 	_, err := js.Subscribe(
 		config.SubjectNameReviewCreated,
 		func(m *nats.Msg) {
@@ -23,7 +27,7 @@ func subscribeReviews(js nats.JetStreamContext) {
 				return
 			}
 
-			// Calculate latency
+			//latency
 			receivedTime := time.Now().UnixMilli()
 			latency := float64(receivedTime - review.SentTime)
 			log.Printf(
@@ -48,9 +52,19 @@ func subscribeReviews(js nats.JetStreamContext) {
 				return
 			}
 
-			// Ack ONLY after successful DB write
 			if err := m.Ack(); err != nil {
 				log.Println("Ack failed:", err)
+			}
+
+			//throughput
+			count++
+			elapsed := time.Since(start).Seconds()
+			if elapsed >= 10 {
+				throughput := float64(count) / elapsed
+				log.Println("Ack----------------------------:", throughput)
+				fmt.Printf("Throughput: %.2f messages/sec\n", throughput)
+				count = 0
+				start = time.Now()
 			}
 		},
 		nats.Durable("review-consumer"),

@@ -33,13 +33,10 @@ func publishReviews(js nats.JetStreamContext) {
 			continue
 		}
 
-		// publish to REVIEWS.rateGiven subject
-		// start := time.Now()
 		_, err = js.Publish(config.SubjectNameReviewCreated, reviewString)
 		if err != nil {
 			log.Println(err)
 		} else {
-			// oneReview.SentTime = start
 			log.Printf("Publisher  =>  Message: %s\n", oneReview.Text)
 		}
 	}
